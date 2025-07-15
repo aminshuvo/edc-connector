@@ -132,6 +132,8 @@ controlPlane:
     apiSecretPath: "secret/"
     healthCheckEnabled: "true"
     healthCheckStandbyOk: "true"
+    # IMPORTANT: Replace this with your real Vault token or provide via a pre-created Kubernetes secret.
+    token: "replace-with-your-vault-token"
   
   # Health check configuration
   healthCheck:
