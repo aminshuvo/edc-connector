@@ -24,6 +24,7 @@ dependencies {
     implementation(project(":extensions:common:api:management-api-configuration"))
     implementation(project(":extensions:common:api:control-api-configuration"))
     implementation(project(":extensions:common:api:api-core"))
+    implementation(project(":extensions:common:api:api-observability"))
     
     // Authentication and IAM
     implementation(project(":extensions:common:iam:iam-mock"))
@@ -47,6 +48,7 @@ dependencies {
     // Crypto and Vault
     implementation(project(":extensions:common:crypto"))
     implementation(project(":extensions:common:vault"))
+    implementation(project(":extensions:common:vault:vault-hashicorp"))
     
     // Validator
     implementation(project(":extensions:common:validator"))

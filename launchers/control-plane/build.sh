@@ -12,7 +12,7 @@ cd "$PROJECT_ROOT"
 # Build the Docker image
 DOCKER_BUILDKIT=1 docker build \
   --build-arg JAR=../build/libs/control-plane.jar \
-  -t edc-control-plane:latest \
+  -t nuruldhamar/edc-controlplane:latest \
   launchers/control-plane
 
-echo "Control plane Docker image built: edc-control-plane:latest" 
+echo "Control plane Docker image built: nuruldhamar/edc-controlplane:latest" 

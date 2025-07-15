@@ -1,0 +1,44 @@
+{{- if .Values.dataPlane.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "edc.fullname" . }}-{{ .Values.dataPlane.name }}
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "edc.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ .Values.dataPlane.name }}
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: default
+      port: {{ .Values.dataPlane.service.ports.default }}
+      targetPort: default
+      protocol: TCP
+    - name: data
+      port: {{ .Values.dataPlane.service.ports.data }}
+      targetPort: data
+      protocol: TCP
+    - name: management
+      port: {{ .Values.dataPlane.service.ports.management }}
+      targetPort: management
+      protocol: TCP
+    - name: public
+      port: {{ .Values.dataPlane.service.ports.public }}
+      targetPort: public
+      protocol: TCP
+    - name: proxy
+      port: {{ .Values.dataPlane.service.ports.proxy }}
+      targetPort: proxy
+      protocol: TCP
+    - name: metrics
+      port: {{ .Values.dataPlane.service.ports.metrics }}
+      targetPort: metrics
+      protocol: TCP
+  selector:
+    {{- include "edc.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ .Values.dataPlane.name }}
+{{- end }} 

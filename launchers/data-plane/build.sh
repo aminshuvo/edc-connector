@@ -14,6 +14,6 @@ cd "$PROJECT_ROOT"
 cd launchers/data-plane
 docker build \
   --build-arg JAR=../build/libs/data-plane.jar \
-  -t edc-data-plane:latest .
+  -t nuruldhamar/edc-dataplane:latest .
 
-echo "Data plane Docker image built: edc-data-plane:latest" 
+echo "Data plane Docker image built: nuruldhamar/edc-dataplane:latest" 

@@ -1,0 +1,44 @@
+{{- if .Values.controlPlane.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "edc.fullname" . }}-{{ .Values.controlPlane.name }}
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "edc.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ .Values.controlPlane.name }}
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: default
+      port: {{ .Values.controlPlane.service.ports.default }}
+      targetPort: default
+      protocol: TCP
+    - name: management
+      port: {{ .Values.controlPlane.service.ports.management }}
+      targetPort: management
+      protocol: TCP
+    - name: control
+      port: {{ .Values.controlPlane.service.ports.control }}
+      targetPort: control
+      protocol: TCP
+    - name: protocol
+      port: {{ .Values.controlPlane.service.ports.protocol }}
+      targetPort: protocol
+      protocol: TCP
+    - name: catalog
+      port: {{ .Values.controlPlane.service.ports.catalog }}
+      targetPort: catalog
+      protocol: TCP
+    - name: metrics
+      port: {{ .Values.controlPlane.service.ports.metrics }}
+      targetPort: metrics
+      protocol: TCP
+  selector:
+    {{- include "edc.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ .Values.controlPlane.name }}
+{{- end }} 
