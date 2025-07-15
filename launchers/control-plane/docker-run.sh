@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Docker run script for EDC Control Plane
+# Configuration via environment variables
+
+echo "Starting EDC Control Plane container..."
+
+# Default environment variables
+export WEB_HTTP_DEFAULT_PORT=${WEB_HTTP_DEFAULT_PORT:-8080}
+export WEB_HTTP_MANAGEMENT_PORT=${WEB_HTTP_MANAGEMENT_PORT:-8081}
+export WEB_HTTP_CONTROL_PORT=${WEB_HTTP_CONTROL_PORT:-8083}
+export WEB_HTTP_PROTOCOL_PORT=${WEB_HTTP_PROTOCOL_PORT:-8084}
+export WEB_HTTP_CATALOG_PORT=${WEB_HTTP_CATALOG_PORT:-8085}
+export WEB_HTTP_METRICS_PORT=${WEB_HTTP_METRICS_PORT:-9090}
+
+export EDC_HOSTNAME=${EDC_HOSTNAME:-localhost}
+export EDC_PARTICIPANT_ID=${EDC_PARTICIPANT_ID:-control-plane}
+export EDC_STORAGE_TYPE=${EDC_STORAGE_TYPE:-in-memory}
+export EDC_AUTH_TYPE=${EDC_AUTH_TYPE:-none}
+
+docker run -d \
+  --name edc-control-plane \
+  --network host \
+  -p ${WEB_HTTP_DEFAULT_PORT}:${WEB_HTTP_DEFAULT_PORT} \
+  -p ${WEB_HTTP_MANAGEMENT_PORT}:${WEB_HTTP_MANAGEMENT_PORT} \
+  -p ${WEB_HTTP_CONTROL_PORT}:${WEB_HTTP_CONTROL_PORT} \
+  -p ${WEB_HTTP_PROTOCOL_PORT}:${WEB_HTTP_PROTOCOL_PORT} \
+  -p ${WEB_HTTP_CATALOG_PORT}:${WEB_HTTP_CATALOG_PORT} \
+  -p ${WEB_HTTP_METRICS_PORT}:${WEB_HTTP_METRICS_PORT} \
+  -e WEB_HTTP_DEFAULT_PORT=${WEB_HTTP_DEFAULT_PORT} \
+  -e WEB_HTTP_MANAGEMENT_PORT=${WEB_HTTP_MANAGEMENT_PORT} \
+  -e WEB_HTTP_CONTROL_PORT=${WEB_HTTP_CONTROL_PORT} \
+  -e WEB_HTTP_PROTOCOL_PORT=${WEB_HTTP_PROTOCOL_PORT} \
+  -e WEB_HTTP_CATALOG_PORT=${WEB_HTTP_CATALOG_PORT} \
+  -e WEB_HTTP_METRICS_PORT=${WEB_HTTP_METRICS_PORT} \
+  -e EDC_HOSTNAME=${EDC_HOSTNAME} \
+  -e EDC_PARTICIPANT_ID=${EDC_PARTICIPANT_ID} \
+  -e EDC_STORAGE_TYPE=${EDC_STORAGE_TYPE} \
+  -e EDC_AUTH_TYPE=${EDC_AUTH_TYPE} \
+  edc-control-plane:latest
+
+echo "EDC Control Plane started!"
+echo "Management API: http://localhost:${WEB_HTTP_MANAGEMENT_PORT}/api/v1/data"
+echo "DSP Protocol: http://localhost:${WEB_HTTP_PROTOCOL_PORT}/api/v1/dsp"
+echo "Catalog API: http://localhost:${WEB_HTTP_CATALOG_PORT}/api/v1/catalog"
+echo "Metrics: http://localhost:${WEB_HTTP_METRICS_PORT}/metrics" 

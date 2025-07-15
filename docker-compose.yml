@@ -1,0 +1,154 @@
+version: '3.8'
+
+services:
+  edc-control-plane:
+    image: edc-control-plane:latest
+    container_name: edc-control-plane
+    ports:
+      - "${WEB_HTTP_DEFAULT_PORT:-8080}:${WEB_HTTP_DEFAULT_PORT:-8080}"
+      - "${WEB_HTTP_MANAGEMENT_PORT:-8081}:${WEB_HTTP_MANAGEMENT_PORT:-8081}"
+      - "${WEB_HTTP_CONTROL_PORT:-8083}:${WEB_HTTP_CONTROL_PORT:-8083}"
+      - "${WEB_HTTP_PROTOCOL_PORT:-8084}:${WEB_HTTP_PROTOCOL_PORT:-8084}"
+      - "${WEB_HTTP_CATALOG_PORT:-8085}:${WEB_HTTP_CATALOG_PORT:-8085}"
+      - "${WEB_HTTP_METRICS_PORT:-9090}:${WEB_HTTP_METRICS_PORT:-9090}"
+    environment:
+      # HTTP Ports
+      - WEB_HTTP_DEFAULT_PORT=${WEB_HTTP_DEFAULT_PORT:-8080}
+      - WEB_HTTP_MANAGEMENT_PORT=${WEB_HTTP_MANAGEMENT_PORT:-8081}
+      - WEB_HTTP_CONTROL_PORT=${WEB_HTTP_CONTROL_PORT:-8083}
+      - WEB_HTTP_PROTOCOL_PORT=${WEB_HTTP_PROTOCOL_PORT:-8084}
+      - WEB_HTTP_CATALOG_PORT=${WEB_HTTP_CATALOG_PORT:-8085}
+      - WEB_HTTP_METRICS_PORT=${WEB_HTTP_METRICS_PORT:-9090}
+      
+      # EDC Configuration
+      - EDC_HOSTNAME=${EDC_HOSTNAME:-localhost}
+      - EDC_PARTICIPANT_ID=${EDC_PARTICIPANT_ID:-control-plane}
+      - EDC_STORAGE_TYPE=${EDC_STORAGE_TYPE:-in-memory}
+      - EDC_AUTH_TYPE=${EDC_AUTH_TYPE:-none}
+      
+      # Data Plane Selector URL (required)
+      - EDC_DPF_SELECTOR_URL=${EDC_DPF_SELECTOR_URL:-http://localhost:8085}
+      
+      # DSP Protocol Configuration
+      - EDC_DSP_CALLBACK_ADDRESS=${EDC_DSP_CALLBACK_ADDRESS:-http://localhost:8084/api/v1/dsp}
+      - EDC_DSP_CONTEXT_ENABLED=${EDC_DSP_CONTEXT_ENABLED:-true}
+      - EDC_DSP_MANAGEMENT_ENABLED=${EDC_DSP_MANAGEMENT_ENABLED:-true}
+      - EDC_DSP_WELL_KNOWN_PATH_ENABLED=${EDC_DSP_WELL_KNOWN_PATH_ENABLED:-false}
+      
+      # Core Configuration
+      - EDC_CORE_RETRY_RETRIES_MAX=${EDC_CORE_RETRY_RETRIES_MAX:-3}
+      - EDC_CORE_RETRY_RETRIES_DELAY=${EDC_CORE_RETRY_RETRIES_DELAY:-1000}
+      - EDC_CORE_RETRY_RETRIES_BACKOFF_MIN=${EDC_CORE_RETRY_RETRIES_BACKOFF_MIN:-1000}
+      - EDC_CORE_RETRY_RETRIES_BACKOFF_MAX=${EDC_CORE_RETRY_RETRIES_BACKOFF_MAX:-10000}
+      
+      # Logging Configuration
+      - LOGGING_LEVEL_EDC=${LOGGING_LEVEL_EDC:-INFO}
+      - LOGGING_LEVEL_ROOT=${LOGGING_LEVEL_ROOT:-WARN}
+      
+      # Metrics Configuration
+      - EDC_METRICS_ENABLED=${EDC_METRICS_ENABLED:-true}
+      - EDC_METRICS_REPORTING_CONSOLE_ENABLED=${EDC_METRICS_REPORTING_CONSOLE_ENABLED:-true}
+      
+      # Transfer Configuration
+      - EDC_TRANSFER_TYPE=${EDC_TRANSFER_TYPE:-http}
+      - EDC_TRANSFER_ENDPOINT_URL=${EDC_TRANSFER_ENDPOINT_URL:-http://localhost:8082}
+      
+      # Catalog Configuration
+      - EDC_CATALOG_ENDPOINT_URL=${EDC_CATALOG_ENDPOINT_URL:-http://localhost:8083}
+      
+      # IAM Configuration
+      - EDC_IAM_ISSUER_ID=${EDC_IAM_ISSUER_ID:-test-issuer}
+      - EDC_IAM_STS_OAUTH_TOKEN_URL=${EDC_IAM_STS_OAUTH_TOKEN_URL:-http://dummy-sts-url}
+      - EDC_IAM_STS_OAUTH_CLIENT_ID=${EDC_IAM_STS_OAUTH_CLIENT_ID:-dummy-client-id}
+      - EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS=${EDC_IAM_STS_OAUTH_CLIENT_SECRET_ALIAS:-dummy-client-secret-alias}
+      
+      # Tractus-X specific configurations
+      - TX_IAM_IATP_BDRS_SERVER_URL=${TX_IAM_IATP_BDRS_SERVER_URL:-http://dummy-bdrs-server-url}
+    networks:
+      - edc-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${WEB_HTTP_MANAGEMENT_PORT:-8081}/api/v1/data"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  edc-data-plane:
+    image: edc-data-plane:latest
+    container_name: edc-data-plane
+    ports:
+      - "${DATA_WEB_HTTP_DEFAULT_PORT:-9080}:8181"
+      - "${DATA_WEB_HTTP_DATA_PORT:-9081}:8182"
+      - "${DATA_WEB_HTTP_MANAGEMENT_PORT:-9082}:8183"
+      - "${DATA_WEB_HTTP_PUBLIC_PORT:-9083}:8184"
+      - "${DATA_WEB_HTTP_PROXY_PORT:-9084}:8185"
+      - "${DATA_WEB_HTTP_METRICS_PORT:-9085}:8186"
+    environment:
+      # HTTP Ports - These are the internal ports used by the container
+      - WEB_HTTP_DEFAULT_PORT=8181
+      - WEB_HTTP_DATA_PORT=8182
+      - WEB_HTTP_MANAGEMENT_PORT=8183
+      - WEB_HTTP_PUBLIC_PORT=8184
+      - WEB_HTTP_PROXY_PORT=8185
+      - WEB_HTTP_METRICS_PORT=8186
+      
+      # EDC Configuration
+      - EDC_HOSTNAME=${EDC_HOSTNAME:-localhost}
+      - EDC_PARTICIPANT_ID=${EDC_PARTICIPANT_ID:-data-plane}
+      - EDC_STORAGE_TYPE=${EDC_STORAGE_TYPE:-in-memory}
+      - EDC_AUTH_TYPE=${EDC_AUTH_TYPE:-none}
+      
+      # Data Plane Configuration
+      - EDC_DATAPLANE_ENDPOINT_URL=${EDC_DATAPLANE_ENDPOINT_URL:-http://localhost:9080}
+      - EDC_DATAPLANE_ENDPOINT_PORT=${EDC_DATAPLANE_ENDPOINT_PORT:-9080}
+      
+      # Data Plane Selector Configuration
+      - EDC_DPF_SELECTOR_URL=${EDC_DPF_SELECTOR_URL:-http://edc-control-plane:8085/management/dataplanes}
+      
+      # Control Plane Configuration (for data plane to communicate with control plane)
+      - EDC_CONTROL_PLANE_API_PORT=8080
+      - EDC_CONTROL_PLANE_MANAGEMENT_PORT=8081
+      - EDC_CONTROL_PLANE_DATAPLANE_SELECTOR_URL=http://edc-control-plane:8085/management/dataplanes
+      
+      # Transfer Token Configuration (required for data plane)
+      - EDC_TRANSFER_PROXY_TOKEN_SIGNER_PRIVATEKEY_ALIAS=${EDC_TRANSFER_PROXY_TOKEN_SIGNER_PRIVATEKEY_ALIAS:-test-signer}
+      - EDC_TRANSFER_PROXY_TOKEN_VERIFIER_PUBLICKEY_ALIAS=${EDC_TRANSFER_PROXY_TOKEN_VERIFIER_PUBLICKEY_ALIAS:-test-verifier}
+      
+      # DSP Protocol Configuration
+      - EDC_DSP_CALLBACK_ADDRESS=${EDC_DSP_CALLBACK_ADDRESS:-http://localhost:9084/api/v1/dsp}
+      - EDC_DSP_CONTEXT_ENABLED=${EDC_DSP_CONTEXT_ENABLED:-true}
+      - EDC_DSP_MANAGEMENT_ENABLED=${EDC_DSP_MANAGEMENT_ENABLED:-true}
+      - EDC_DSP_WELL_KNOWN_PATH_ENABLED=${EDC_DSP_WELL_KNOWN_PATH_ENABLED:-false}
+      
+      # Core Configuration
+      - EDC_CORE_RETRY_RETRIES_MAX=${EDC_CORE_RETRY_RETRIES_MAX:-3}
+      - EDC_CORE_RETRY_RETRIES_DELAY=${EDC_CORE_RETRY_RETRIES_DELAY:-1000}
+      - EDC_CORE_RETRY_RETRIES_BACKOFF_MIN=${EDC_CORE_RETRY_RETRIES_BACKOFF_MIN:-1000}
+      - EDC_CORE_RETRY_RETRIES_BACKOFF_MAX=${EDC_CORE_RETRY_RETRIES_BACKOFF_MAX:-10000}
+      
+      # Logging Configuration
+      - LOGGING_LEVEL_EDC=${LOGGING_LEVEL_EDC:-INFO}
+      - LOGGING_LEVEL_ROOT=${LOGGING_LEVEL_ROOT:-WARN}
+      
+      # Metrics Configuration
+      - EDC_METRICS_ENABLED=${EDC_METRICS_ENABLED:-true}
+      - EDC_METRICS_REPORTING_CONSOLE_ENABLED=${EDC_METRICS_REPORTING_CONSOLE_ENABLED:-true}
+      
+      # Tractus-X specific configurations
+      - TX_IAM_IATP_BDRS_SERVER_URL=${TX_IAM_IATP_BDRS_SERVER_URL:-http://dummy-bdrs-server-url}
+    networks:
+      - edc-network
+    restart: unless-stopped
+    depends_on:
+      - edc-control-plane
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${DATA_WEB_HTTP_PUBLIC_PORT:-9081}/api/public"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  edc-network:
+    driver: bridge 
