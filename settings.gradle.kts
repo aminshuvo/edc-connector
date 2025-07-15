@@ -158,6 +158,7 @@ include(":extensions:common:auth:auth-configuration")
 include(":extensions:common:crypto:ldp-verifiable-credentials")
 include(":extensions:common:crypto:jwt-verifiable-credentials")
 include(":extensions:common:crypto:lib:jws2020-lib")
+include(":extensions:common:data-masking")
 
 include(":extensions:common:http:lib:jersey-providers-lib")
 
