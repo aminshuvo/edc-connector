@@ -1,0 +1,116 @@
+{{- if .Values.dataPlane.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "edc.fullname" . }}-{{ .Values.dataPlane.name }}
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "edc.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ .Values.dataPlane.name }}
+spec:
+  replicas: {{ .Values.dataPlane.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "edc.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: {{ .Values.dataPlane.name }}
+  template:
+    metadata:
+      labels:
+        {{- include "edc.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: {{ .Values.dataPlane.name }}
+      {{- with .Values.dataPlane.pod.annotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "edc.serviceAccountName" . }}
+      {{- with .Values.dataPlane.pod.securityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.dataPlane.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.dataPlane.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.dataPlane.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Values.dataPlane.name }}
+          image: "{{ .Values.global.imageRegistry }}{{ .Values.dataPlane.image.repository }}:{{ .Values.dataPlane.image.tag }}"
+          imagePullPolicy: {{ .Values.dataPlane.image.pullPolicy }}
+          {{- with .Values.dataPlane.pod.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: default
+              containerPort: {{ .Values.dataPlane.service.ports.default }}
+              protocol: TCP
+            - name: data
+              containerPort: {{ .Values.dataPlane.service.ports.data }}
+              protocol: TCP
+            - name: management
+              containerPort: {{ .Values.dataPlane.service.ports.management }}
+              protocol: TCP
+            - name: public
+              containerPort: {{ .Values.dataPlane.service.ports.public }}
+              protocol: TCP
+            - name: proxy
+              containerPort: {{ .Values.dataPlane.service.ports.proxy }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ .Values.dataPlane.service.ports.metrics }}
+              protocol: TCP
+          {{- if .Values.dataPlane.healthCheck.enabled }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.dataPlane.service.ports.default }}
+            initialDelaySeconds: {{ .Values.dataPlane.healthCheck.initialDelaySeconds }}
+            periodSeconds: {{ .Values.dataPlane.healthCheck.periodSeconds }}
+            timeoutSeconds: {{ .Values.dataPlane.healthCheck.timeoutSeconds }}
+            failureThreshold: {{ .Values.dataPlane.healthCheck.failureThreshold }}
+            successThreshold: {{ .Values.dataPlane.healthCheck.successThreshold }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.dataPlane.service.ports.default }}
+            initialDelaySeconds: {{ .Values.dataPlane.healthCheck.initialDelaySeconds }}
+            periodSeconds: {{ .Values.dataPlane.healthCheck.periodSeconds }}
+            timeoutSeconds: {{ .Values.dataPlane.healthCheck.timeoutSeconds }}
+            failureThreshold: {{ .Values.dataPlane.healthCheck.failureThreshold }}
+            successThreshold: {{ .Values.dataPlane.healthCheck.successThreshold }}
+          {{- end }}
+          env:
+            {{- range $key, $value := .Values.dataPlane.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- if .Values.dataPlane.vault.enabled }}
+            - name: EDC_VAULT_HASHICORP_URL
+              value: {{ .Values.dataPlane.vault.url | quote }}
+            - name: EDC_VAULT_HASHICORP_API_SECRET_PATH
+              value: {{ .Values.dataPlane.vault.apiSecretPath | quote }}
+            - name: EDC_VAULT_HASHICORP_HEALTH_CHECK_ENABLED
+              value: {{ .Values.dataPlane.vault.healthCheckEnabled | quote }}
+            - name: EDC_VAULT_HASHICORP_HEALTH_CHECK_STANDBY_OK
+              value: {{ .Values.dataPlane.vault.healthCheckStandbyOk | quote }}
+            - name: EDC_VAULT_HASHICORP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.dataPlane.vault.tokenSecretName }}
+                  key: {{ .Values.dataPlane.vault.tokenSecretKey }}
+            {{- end }}
+          {{- with .Values.dataPlane.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }} 

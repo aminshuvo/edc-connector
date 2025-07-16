@@ -35,6 +35,7 @@ dependencies {
     implementation(project(":extensions:common:api:api-core"))
     implementation(project(":extensions:common:api:control-api-configuration"))
     implementation(project(":extensions:common:api:management-api-configuration"))
+    implementation(project(":extensions:common:api:api-observability"))
     
     // HTTP and Web Support
     implementation(project(":extensions:common:http"))
@@ -58,6 +59,7 @@ dependencies {
     // Crypto and Vault
     implementation(project(":extensions:common:crypto"))
     implementation(project(":extensions:common:vault"))
+    implementation(project(":extensions:common:vault:vault-hashicorp"))
     
     // Validator
     implementation(project(":extensions:common:validator"))

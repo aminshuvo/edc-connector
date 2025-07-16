@@ -1,0 +1,84 @@
+# Custom values for EDC Helm Chart deployment
+# This file overrides the default values.yaml
+
+# Enable ingress
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations: {}
+  hosts:
+    - host: edc-control-plane.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: "control-plane"
+    - host: edc-data-plane.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: "data-plane"
+  tls: []
+
+# Control Plane configuration with latest image
+controlPlane:
+  enabled: true
+  name: "control-plane"
+  
+  # Image configuration - using latest images
+  image:
+    repository: nuruldhamar/edc-controlplane
+    tag: "latest"
+    pullPolicy: Always  # Always pull to get latest
+  
+  # Replica configuration
+  replicaCount: 1
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+# Data Plane configuration with latest image
+dataPlane:
+  enabled: true
+  name: "data-plane"
+  
+  # Image configuration - using latest images
+  image:
+    repository: nuruldhamar/edc-dataplane
+    tag: "latest"
+    pullPolicy: Always  # Always pull to get latest
+  
+  # Replica configuration
+  replicaCount: 1
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+# Service configuration
+service:
+  type: ClusterIP
+  annotations: {}
+
+# Global configuration
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+  nameOverride: ""
+  fullnameOverride: ""
+
+# Namespace configuration
+namespace:
+  create: false  # Don't create namespace as it already exists
+  name: "edc" 

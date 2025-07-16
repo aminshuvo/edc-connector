@@ -1,59 +1,140 @@
-# EDC Connector
+# Eclipse Dataspace Connector (EDC) - Connector Project
 
-[![documentation](https://img.shields.io/badge/documentation-8A2BE2?style=flat-square)](https://eclipse-edc.github.io) 
-[![discord](https://img.shields.io/badge/discord-chat-brightgreen.svg?style=flat-square&logo=discord)](https://discord.gg/n4sD9qtjMQ)
-[![latest version](https://img.shields.io/maven-central/v/org.eclipse.edc/boot?logo=apache-maven&style=flat-square&label=latest%20version)](https://search.maven.org/artifact/org.eclipse.edc/boot)
-[![license](https://img.shields.io/github/license/eclipse-edc/Connector?style=flat-square&logo=apache)](https://www.apache.org/licenses/LICENSE-2.0)
-<br>
-[![build](https://img.shields.io/github/actions/workflow/status/eclipse-edc/Connector/verify.yaml?branch=main&logo=GitHub&style=flat-square&label=ci)](https://github.com/eclipse-edc/Connector/actions/workflows/verify.yaml?query=branch%3Amain)
-[![snapshot build](https://img.shields.io/github/actions/workflow/status/eclipse-edc/Connector/trigger_snapshot.yml?branch=main&logo=GitHub&style=flat-square&label=snapshot-build)](https://github.com/eclipse-edc/Connector/actions/workflows/trigger_snapshot.yml)
-[![nightly build](https://img.shields.io/github/actions/workflow/status/eclipse-edc/Connector/nightly.yml?branch=main&logo=GitHub&style=flat-square&label=nightly-build)](https://github.com/eclipse-edc/Connector/actions/workflows/nightly.yml)
+This project provides a modular implementation of the Eclipse Dataspace Connector (EDC) with Control Plane and Data Plane components. It supports running locally with Docker Compose or deploying to Kubernetes with Helm.
 
 ---
 
-## Documentation
+## Prerequisites
 
-Base documentation can be found on the [documentation website](https://eclipse-edc.github.io). \
-Developer documentation can be found under [docs/developer](docs/developer), \
-where the main concepts and decisions are captured as [decision records](docs/developer/decision-records/README.md).
+- Java 17+
+- Docker & Docker Compose
+- (For Kubernetes) Helm 3.0+ and kubectl
+- HashiCorp Vault instance (for secrets management)
 
-## Directory structure
+---
 
-### `spi`
+## Building the Project
 
-This is the primary extension point for the connector. It contains all necessary interfaces that need to be implemented
-as well as essential model classes and enums. Basically, the `spi` modules defines the extent to what users can
-customize and extend the code.
+This project uses Gradle for builds. To build all modules:
 
-### `core`
+```bash
+gradlew clean build
+```
 
-Contains all absolutely essential building that is necessary to run a connector such as `TransferProcessManager`,
-`ProvisionManager`, `DataFlowManager`, various model classes, the protocol engine and the policy piece. While it is
-possible to build a connector with just the code from the `core` module, it will have very limited capabilities to
-communicate and to interact with a data space.
+This will compile all modules and run the tests.
 
-### `extensions`
+---
 
-This contains code that extends the connector's core functionality with technology- or cloud-provider-specific code. For
-example a transfer process store based on Azure CosmosDB, a secure vault based on Azure KeyVault, etc. This is where
-technology- and cloud-specific implementations should go.
+## Building Docker Images
 
-If someone were to create a configuration service based on Postgres, then the implementation should go into
-the `extensions/database/configuration-postgres` module.
+To build the Docker images for the Control Plane and Data Plane:
 
-### `launchers`
+```bash
+# Control Plane
+cd launchers/control-plane
+./build.sh
 
-Launchers are essentially connector packages that are runnable. What modules get included in the build (and thus: what
-capabilities a connector has) is defined by the `build.gradle.kts` file inside the launcher subdirectory. That's also
-where a Java class containing a `main` method should go. We will call that class a "runtime" and in order for the
-connector to become operational the `runtime` needs to perform several important tasks (="bootstrapping"). For an
-example take a look at
-[this runtime](https://github.com/eclipse-edc/Samples/tree/main/basic/basic-01-basic-connector).
+# Data Plane
+cd ../data-plane
+./build.sh
+```
 
-### `data-protocols`
+This will produce Docker images (by default tagged as `latest`).
 
-Contains implementations for communication protocols a connector might use, such as DSP.
+---
 
-## Contributing
+## Running with Docker Compose
 
-See [how to contribute](https://github.com/eclipse-edc/eclipse-edc.github.io/blob/main/CONTRIBUTING.md).
+A sample `docker-compose.yml` is provided to run both Control Plane and Data Plane locally:
+
+```bash
+docker-compose up -d
+```
+
+This will start both services and expose the following ports:
+
+- Control Plane: 8080 (API), 8081 (Management), 8083 (Control), 8084 (DSP), 8085 (Catalog), 9090 (Metrics)
+- Data Plane: 9080-9085 (mapped to 8181-8186 in the container)
+
+**Vault Requirement:**
+- The services expect a running Vault instance (see below).
+- The Vault token must be provided via the environment variable `EDC_VAULT_HASHICORP_TOKEN` (see `docker-compose.yml`).
+
+---
+
+## Running with Helm (Kubernetes)
+
+A Helm chart is provided in `helm/edc/` for deploying to Kubernetes.
+
+### Basic Installation
+
+```bash
+helm install edc ./helm/edc
+```
+
+### Custom Values
+
+You can override configuration by creating a `custom-values.yaml` file (see `helm/edc/custom-values.yaml` for an example):
+
+```bash
+helm install edc ./helm/edc -f custom-values.yaml
+```
+
+### Vault Integration
+
+- The chart expects a Kubernetes secret named `vault-edc-token` containing your Vault token.
+- To create it:
+
+```bash
+kubectl create secret generic vault-edc-token -n edc --from-literal=token="<your-vault-token>"
+```
+
+- You can override the secret name/key in your values file:
+
+```yaml
+controlPlane:
+  vault:
+    tokenSecretName: "my-custom-vault-secret"
+    tokenSecretKey: "my-token-key"
+```
+
+---
+
+## Vault Requirement
+
+Both Control Plane and Data Plane require access to a HashiCorp Vault instance for secret management. The Vault token must be provided as:
+
+- Environment variable: `EDC_VAULT_HASHICORP_TOKEN` (for Docker Compose)
+- Kubernetes secret: `vault-edc-token` (for Helm)
+
+**The token must have sufficient permissions to read/write secrets in the configured Vault path.**
+
+---
+
+## Useful Endpoints
+
+- Control Plane:
+  - HTTP API: http://localhost:8080
+  - Management API: http://localhost:8081/api/v1/data
+  - Control API: http://localhost:8083/api/v1/control
+  - DSP Protocol: http://localhost:8084/api/v1/dsp
+  - Catalog API: http://localhost:8085/api/v1/catalog
+  - Metrics: http://localhost:9090/metrics
+- Data Plane:
+  - HTTP API: http://localhost:9080
+  - Public API: http://localhost:9083/api/public
+  - Proxy API: http://localhost:9084/api/v1/data
+  - Metrics: http://localhost:9085/metrics
+
+---
+
+## Troubleshooting
+
+- Check logs: `docker-compose logs` or `kubectl logs ...`
+- Check Vault connectivity and token permissions if secrets are not accessible.
+
+---
+
+## License
+
+This project is licensed under the Apache License 2.0. 
