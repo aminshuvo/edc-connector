@@ -90,10 +90,10 @@ dependencies {
     implementation(project(":extensions:common:sql"))
     
     // Available External Dependencies from Maven Central
-    implementation("org.eclipse.edc:http-spi:0.13.0")
-    implementation("org.eclipse.edc:web-spi:0.13.0")
-    implementation("org.eclipse.edc:validator-spi:0.13.0")
-    implementation("org.eclipse.edc:transform-spi:0.13.0")
+    implementation("org.eclipse.edc:http-spi:0.13.1")
+    implementation("org.eclipse.edc:web-spi:0.13.1")
+    implementation("org.eclipse.edc:validator-spi:0.13.1")
+    implementation("org.eclipse.edc:transform-spi:0.13.1")
 }
 
 application {
